@@ -30,4 +30,5 @@ interface FabricDao {
     // ✅ 특정 원단 번호 조회 (find 용도)
     @Query("SELECT * FROM fabric_location WHERE fabricNo = :no LIMIT 1")
     suspend fun find(no: String): FabricEntry?
+
 }

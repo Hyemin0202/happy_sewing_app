@@ -44,7 +44,8 @@ fun AppNav() {
                 onGoSearch = { navController.navigate("search") },
                 onGoInput = { navController.navigate("input") },
                 onDbImport = { importLauncher.launch(arrayOf("application/json")) },
-                onDbExport = { exportLauncher.launch("fabric_db.json") }
+                onDbExport = { exportLauncher.launch("fabric_db.json") },
+                onGoList = { navController.navigate("list") }
             )
         }
         composable("input") {
@@ -57,6 +58,9 @@ fun AppNav() {
             SearchScreen(
                 onBack = { navController.popBackStack() }
             )
+        }
+        composable("list") {
+            ListScreen(onBack = { navController.popBackStack() })
         }
     }
 }

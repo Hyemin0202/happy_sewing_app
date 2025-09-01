@@ -20,7 +20,9 @@ import androidx.compose.ui.draw.shadow
 fun HomeScreen(    onGoSearch: () -> Unit,
                    onGoInput: () -> Unit,
                    onDbImport: () -> Unit,
-                   onDbExport: () -> Unit) {
+                   onDbExport: () -> Unit,
+                   onGoList: () -> Unit
+    ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp).background(Color(0xFFF7F7F7)),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -45,7 +47,9 @@ fun HomeScreen(    onGoSearch: () -> Unit,
             Spacer(Modifier.width(8.dp))
             Text("원단 위치 입력", style = MaterialTheme.typography.titleLarge)
         }
-        Spacer(Modifier.height(40.dp))
+        //버튼 사이 spacer
+        Spacer(Modifier.height(20.dp))
+
         Button(
             onClick = onGoSearch,
             modifier = Modifier.fillMaxWidth()
@@ -65,7 +69,32 @@ fun HomeScreen(    onGoSearch: () -> Unit,
             Spacer(Modifier.width(8.dp))
             Text("원단 위치 검색", style = MaterialTheme.typography.titleLarge)
         }
-        Spacer(Modifier.height(40.dp))
+        //버튼 사이 spacer
+        Spacer(Modifier.height(20.dp))
+
+        Button(
+            onClick = onGoList,
+            modifier = Modifier.fillMaxWidth()
+                .height(56.dp)
+                .shadow(4.dp, shape = RoundedCornerShape(12.dp), clip = false), // ✅ 그림자
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFFFFFF),
+                contentColor = Color.Black
+            )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.outline_format_list_bulleted_24), // ✅ 직접 추가한 아이콘
+                contentDescription = "리스트",
+                tint = Color.Black  // 흑백 벡터면 색상을 입힐 수 있어요
+            )
+            Spacer(Modifier.width(8.dp))
+            Text("원단 위치 리스트", style = MaterialTheme.typography.titleLarge)
+        }
+
+        //버튼 사이 spacer
+        Spacer(Modifier.height(20.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween

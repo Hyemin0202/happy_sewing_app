@@ -62,6 +62,13 @@ class FabricRepository(private val dao: FabricDao) {
             }
         }
     }
+
+    suspend fun getAll(): List<FabricEntry> = dao.getAll()
+
+    suspend fun deleteWithHistory(fabricNo: String) {
+        dao.delete(fabricNo)
+        dao.deleteHistory(fabricNo)
+    }
 }
 
 // 전역에서 repository 가져오기
