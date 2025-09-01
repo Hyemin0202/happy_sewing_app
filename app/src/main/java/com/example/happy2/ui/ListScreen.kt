@@ -22,38 +22,37 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun ListScreen(onBack: () -> Unit) {
+fun ListScreen(
+    onBack: () -> Unit,
+    onGoFilter: () -> Unit,
+    selectedLocations: Set<String>
+) {
     val context = LocalContext.current
     val repo = getRepository(context)
     var entries by remember { mutableStateOf<List<FabricEntry>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
-    // 정렬 상태
-    var sortAscending by remember { mutableStateOf(true) }
-
-    // 필터 상태
-    var selectedLocations by remember { mutableStateOf(setOf<String>()) }
-    var allLocations by remember { mutableStateOf(setOf<String>()) }
-
-    // 삭제 팝업 상태
+    // ✅ 삭제 팝업 상태
     var showDialog by remember { mutableStateOf(false) }
     var targetEntry by remember { mutableStateOf<FabricEntry?>(null) }
 
-    // Snackbar 상태
+    // ✅ Snackbar 상태
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 화면 진입 시 DB 불러오기
+    // 정렬 상태
+    var sortAscending by remember { mutableStateOf(true) }
+
+    // DB 불러오기
     LaunchedEffect(Unit) {
         scope.launch {
             entries = repo.getAll()
-            allLocations = entries.map { it.location }.toSet()
         }
     }
 
-    // ✅ 정렬 및 필터 적용된 리스트
+    // ✅ 정렬 + 필터 적용된 리스트
     val displayedEntries = entries
         .filter { selectedLocations.isEmpty() || it.location in selectedLocations }
-        .sortedWith(compareBy<FabricEntry> { it.location }.let {
+        .sortedWith(compareBy<FabricEntry> { it.fabricNo }.let {
             if (sortAscending) it else it.reversed()
         })
 
@@ -67,51 +66,38 @@ fun ListScreen(onBack: () -> Unit) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
             }
-            Text("원단 위치 리스트", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
+            Text(
+                text = "원단 위치 리스트",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // ✅ 정렬 토글 버튼
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // ✅ 정렬 / 위치 선택 버튼
+        Row {
             Button(onClick = { sortAscending = !sortAscending }) {
                 Text(if (sortAscending) "정렬: 오름차순" else "정렬: 내림차순")
             }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // ✅ 위치 필터 체크박스
-        Column {
-            allLocations.forEach { loc ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = loc in selectedLocations,
-                        onCheckedChange = { checked ->
-                            selectedLocations =
-                                if (checked) selectedLocations + loc else selectedLocations - loc
-                        }
-                    )
-                    Text(loc)
-                }
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = onGoFilter) {
+                Text("위치 선택")
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // 헤더
+        // 테이블 헤더
         Row(
             Modifier
                 .fillMaxWidth()
                 .background(Color(0xFFE0E0E0))
                 .padding(vertical = 8.dp, horizontal = 12.dp)
         ) {
-            Text("원단 번호", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-            Text("현재 위치", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.width(48.dp))
+            Text("원단 번호", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+            Text("현재 위치", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.width(48.dp)) // 삭제 아이콘 자리
         }
 
         // 리스트 (스크롤)
@@ -120,19 +106,23 @@ fun ListScreen(onBack: () -> Unit) {
         ) {
             items(displayedEntries) { entry ->
                 Row(
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 12.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp, horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(entry.fabricNo, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                    Text(entry.location, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                    IconButton(onClick = {
-                        targetEntry = entry
-                        showDialog = true
-                    }) {
+                    Text(entry.fabricNo, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+                    Text(entry.location, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+                    IconButton(
+                        onClick = {
+                            targetEntry = entry
+                            showDialog = true
+                        }
+                    ) {
                         Icon(Icons.Filled.Delete, contentDescription = "삭제", tint = Color.Red)
                     }
                 }
-                Divider(color = Color(0xFFBDBDBD), thickness = 0.5.dp)
+                HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFBDBDBD))
             }
         }
 
@@ -146,13 +136,16 @@ fun ListScreen(onBack: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
-                        repo.delete(targetEntry!!.fabricNo)
-                        entries = repo.getAll()
-                        allLocations = entries.map { it.location }.toSet()
+                        repo.delete(targetEntry!!.fabricNo)  // Entry + History 삭제
+                        entries = repo.getAll()              // 리스트 갱신
                         showDialog = false
 
+                        // Snackbar 0.5초 표시
                         val job = launch {
-                            snackbarHostState.showSnackbar("삭제 완료", duration = SnackbarDuration.Indefinite)
+                            snackbarHostState.showSnackbar(
+                                "원단번호 ${targetEntry!!.fabricNo} 삭제 완료",
+                                duration = SnackbarDuration.Indefinite
+                            )
                         }
                         delay(500)
                         snackbarHostState.currentSnackbarData?.dismiss()
@@ -160,7 +153,9 @@ fun ListScreen(onBack: () -> Unit) {
                     }
                 }) { Text("예") }
             },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("아니오") } },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("아니오") }
+            },
             title = { Text("삭제 확인") },
             text = { Text("원단번호 ${targetEntry!!.fabricNo} 를 삭제하시겠습니까?") }
         )

@@ -59,8 +59,33 @@ fun AppNav() {
                 onBack = { navController.popBackStack() }
             )
         }
-        composable("list") {
-            ListScreen(onBack = { navController.popBackStack() })
+
+        composable("list") { backStackEntry ->
+            val selectedLocations =
+                backStackEntry.savedStateHandle.get<Set<String>>("selectedLocations") ?: emptySet()
+            ListScreen(
+                onBack = { navController.popBackStack() },
+                onGoFilter = { navController.navigate("filter") },
+                selectedLocations = selectedLocations
+            )
+        }
+        composable("filter") { backStackEntry ->
+            // ✅ ListScreen 에서 넘긴 selectedLocations 가져오기
+            val currentSelected =
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<Set<String>>("selectedLocations") ?: emptySet()
+
+            FilterScreen(
+                onBack = { navController.popBackStack() },
+                onApply = { selected ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selectedLocations", selected)
+                    navController.popBackStack()
+                },
+                initialSelected = currentSelected // ✅ 기존 선택 전달
+            )
         }
     }
 }
